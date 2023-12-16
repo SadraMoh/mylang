@@ -1,0 +1,17 @@
+equation = _{ SOI ~ (expr ~ NEWLINE*)+ ~ EOI }
+
+expr = { binary_expr | unary_expr | atomic }
+
+integer = @{ ASCII_DIGIT+ }
+
+unary_expr = { unary_op? ~ atomic }
+
+unary_op = { "-" }
+
+binary_expr = { atomic ~ binary_op ~ atomic }
+
+binary_op = { "+" | "-" }
+
+atomic = _{ integer }
+
+WHITESPACE = _{ " " }
