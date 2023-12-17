@@ -1,17 +1,34 @@
-equation = _{ SOI ~ (expr ~ NEWLINE*)+ ~ EOI }
+program = { SOI ~ (function ~ NLS)+ ~ EOI }
 
-expr = { binary_expr | unary_expr | atomic }
+function             =  { function_declaration ~ NLS ~ function_block }
+function_declaration = _{ fun ~ ident ~ (ident)* }
+function_block       = _{ begin ~ NLS ~ function_body ~ NLS ~ end }
+function_body        =  { ((expr | function_return) ~ NLS)* }
+function_return      = _{ ret ~ (expr)* }
 
-integer = @{ ASCII_DIGIT+ }
+call = { (ident)* }
 
-unary_expr = { unary_op? ~ atomic }
+declaration = { function }
 
-unary_op = { "-" }
+str  = @{ "'" ~ char* ~ "'" }
+char =  {
+    !("'") ~ ANY
+}
 
-binary_expr = { atomic ~ binary_op ~ atomic }
+num   = _{ float | int }
+int   = @{ ASCII_DIGIT+ }
+float = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
 
-binary_op = { "+" | "-" }
+keyword =  { fun | begin | end | ret }
+fun     = @{ "fun" }
+begin   = @{ "begin" }
+end     = @{ "end" }
+ret     = @{ "ret" }
 
-atomic = _{ integer }
+ident = @{ !(ASCII_DIGIT) ~ !(keyword ~ !ASCII_ALPHANUMERIC) ~ ASCII_ALPHANUMERIC+ }
+
+expr = { num | str | ident }
 
 WHITESPACE = _{ " " }
+COMMENT    = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }
+NLS        = _{ (NEWLINE)* }

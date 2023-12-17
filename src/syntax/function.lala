@@ -1,0 +1,21 @@
+fun emptyFun begin
+end
+
+fun askewFun
+begin end
+
+fun voidFun begin 
+  ret
+end
+
+fun intFun begin
+  ret 1
+end
+
+fun inputFun parameter begin
+  ret parameter
+end
+
+fun inputsFun parameter1 parameter2 begin
+  ret parameter1
+end
