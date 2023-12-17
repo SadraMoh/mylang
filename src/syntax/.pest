@@ -1,14 +1,17 @@
-program = { SOI ~ (function ~ NLS)+ ~ EOI }
+program = { SOI ~ (expr ~ NLS)+ ~ EOI }
 
-function             =  { function_declaration ~ NLS ~ function_block }
-function_declaration = _{ fun ~ ident ~ (ident)* }
-function_block       = _{ begin ~ NLS ~ function_body ~ NLS ~ end }
-function_body        =  { ((expr | function_return) ~ NLS)* }
-function_return      = _{ ret ~ (expr)* }
+function         =  { function_declare ~ NLS ~ function_block }
+function_declare = _{ fun ~ ident ~ function_params }
+function_params  =  { (ident)* }
+function_block   = _{ begin ~ NLS ~ function_body ~ NLS ~ end }
+function_body    =  { ((expr | function_return) ~ NLS)* }
+function_return  = _{ ret ~ (expr)* }
 
-call = { (ident)* }
+function_call = { (ident)* } // Controversial
 
-declaration = { function }
+variable_declare = { let ~ ident ~ variable_init? }
+variable_init    = { load ~ expr }
+variable_assign  = { ident ~ load ~ expr }
 
 str  = @{ "'" ~ char* ~ "'" }
 char =  {
@@ -24,10 +27,15 @@ fun     = @{ "fun" }
 begin   = @{ "begin" }
 end     = @{ "end" }
 ret     = @{ "ret" }
+true    = @{ "true" }
+false   = @{ "false" }
+let     = @{ "let" }
+load    = @{ "load" }
 
+// Any alphanumeric string that does not begin with a digit except keywords
 ident = @{ !(ASCII_DIGIT) ~ !(keyword ~ !ASCII_ALPHANUMERIC) ~ ASCII_ALPHANUMERIC+ }
 
-expr = { num | str | ident }
+expr = { num | str | variable_declare | variable_assign | function | ident }
 
 WHITESPACE = _{ " " }
 COMMENT    = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }

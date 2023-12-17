@@ -1,0 +1,9 @@
+let one
+
+let one load 1
+
+let bit load true
+
+bit load false
+
+bit load one
