@@ -7,22 +7,29 @@ function_block   = _{ begin ~ NLS ~ function_body ~ NLS ~ end }
 function_body    =  { ((expr | function_return) ~ NLS)* }
 function_return  = _{ ret ~ (expr)* }
 
-function_call = { (ident)* } // Controversial
-
 variable_declare = { let ~ ident ~ variable_init? }
 variable_init    = { load ~ expr }
 variable_assign  = { ident ~ load ~ expr }
+
+pipeline         =  { pipable_expr ~ pipeline_segment+ ~ !(pipe) }
+pipable_expr     = _{ bool | num | str | idents }
+pipeline_segment =  { (NLS? ~ pipe ~ pipable_expr) }
+
+comma_sep            = { (comma_separable_expr ~ ",")+ ~ comma_separable_expr? }
+comma_separable_expr = { num | bool | num | str | idents }
 
 str  = @{ "'" ~ char* ~ "'" }
 char =  {
     !("'") ~ ANY
 }
 
+bool  = @{ true | false }
 num   = _{ float | int }
 int   = @{ ASCII_DIGIT+ }
 float = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
+array =  { comma_sep }
 
-keyword =  { fun | begin | end | ret }
+keyword = @{ fun | begin | end | ret | true | false | let | load | pipe }
 fun     = @{ "fun" }
 begin   = @{ "begin" }
 end     = @{ "end" }
@@ -31,11 +38,16 @@ true    = @{ "true" }
 false   = @{ "false" }
 let     = @{ "let" }
 load    = @{ "load" }
+pipe    = @{ "pipe" }
+// can be ident
+it = @{ "it" }
 
 // Any alphanumeric string that does not begin with a digit except keywords
-ident = @{ !(ASCII_DIGIT) ~ !(keyword ~ !ASCII_ALPHANUMERIC) ~ ASCII_ALPHANUMERIC+ }
+ident         = @{ !(ASCII_DIGIT) ~ !(keyword ~ !ASCII_ALPHANUMERIC) ~ ASCII_ALPHANUMERIC+ }
+idents        = ${ (ident) ~ (ident_segment)* }
+ident_segment = _{ WHITESPACE ~ expr }
 
-expr = { num | str | variable_declare | variable_assign | function | ident }
+expr = { pipeline | array | num | str | variable_declare | variable_assign | function | idents }
 
 WHITESPACE = _{ " " }
 COMMENT    = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }

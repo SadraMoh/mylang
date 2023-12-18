@@ -1,0 +1,16 @@
+1,
+
+1, 2, 3, 4, 5
+
+let array load 1,
+
+let array load 1, 2, 3, 4, 5
+
+let trailing load 1, 2, 3, 4,
+
+let stuck load 1,2,3,4
+
+let mixed load 1, 2,3 ,4
+
+let array load array.new
+

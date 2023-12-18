@@ -1,0 +1,25 @@
+print
+
+print "hello"
+
+print world
+
+print "hello" "world"
+
+print hello world
+
+print "hello" world
+
+print iterate world
+
+print iterate pipe iterate2 pipe iterate3
+
+print iterate
+  pipe iterate2
+  pipe iterate3
+
+print iterate pipe it
+
+print iterate pipe 'hello' it
+
+print iterate pipe it 'hello'
