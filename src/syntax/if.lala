@@ -1,0 +1,22 @@
+if x do end
+
+if x do
+end
+
+if x do hello 'world' end
+
+if x do
+  hello 'world'
+end
+
+if x do y else do z end
+
+if x do
+  y
+elif x2 do
+  y2
+elif x3 do
+  y3
+else do
+  y4
+end

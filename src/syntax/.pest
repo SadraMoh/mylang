@@ -1,9 +1,9 @@
-program = { SOI ~ (expr ~ NLS)+ ~ EOI }
+program = { SOI ~ exprs ~ EOI }
 
 function         =  { function_declare ~ NLS ~ function_block }
 function_declare = _{ fun ~ ident ~ function_params }
 function_params  =  { (ident)* }
-function_block   = _{ begin ~ NLS ~ function_body ~ NLS ~ end }
+function_block   = _{ do ~ NLS ~ function_body ~ NLS ~ end }
 function_body    =  { ((expr | function_return) ~ NLS)* }
 function_return  = _{ ret ~ (expr)* }
 
@@ -11,12 +11,21 @@ variable_declare = { let ~ ident ~ variable_init? }
 variable_init    = { load ~ expr }
 variable_assign  = { ident ~ load ~ expr }
 
-pipeline         =  { pipable_expr ~ pipeline_segment+ ~ !(pipe) }
-pipable_expr     = _{ bool | num | str | idents }
-pipeline_segment =  { (NLS? ~ pipe ~ pipable_expr) }
+pipeline     =  { pipable_expr ~ pipeline_seg+ ~ !(pipe) }
+pipable_expr = _{ bool | num | str | idents }
+pipeline_seg =  { (NLS ~ pipe ~ pipable_expr) }
 
 comma_sep            = { (comma_separable_expr ~ ",")+ ~ comma_separable_expr? }
-comma_separable_expr = { num | bool | num | str | idents }
+comma_separable_expr = { bool | num | str | idents }
+
+dot_sep            = { (comma_separable_expr ~ ".")+ ~ comma_separable_expr? }
+dot_separable_expr = { num | str | idents }
+
+if_expr  = { if ~ expr ~ NLS ~ do ~ exprs ~ (end | else_seg | elif_seg) }
+elif_seg = { elif ~ expr ~ NLS ~ do ~ exprs ~ (end | else_seg | elif_seg) }
+else_seg = { else ~ NLS ~ do ~ exprs ~ end }
+
+then_expr = { if ~ expr ~ then ~ expr ~ else ~ expr }
 
 str  = @{ "'" ~ char* ~ "'" }
 char =  {
@@ -29,9 +38,23 @@ int   = @{ ASCII_DIGIT+ }
 float = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
 array =  { comma_sep }
 
-keyword = @{ fun | begin | end | ret | true | false | let | load | pipe }
+keyword = @{
+    fun
+  | do
+  | end
+  | ret
+  | true
+  | false
+  | let
+  | load
+  | pipe
+  | if
+  | elif
+  | else
+  | then
+}
 fun     = @{ "fun" }
-begin   = @{ "begin" }
+do      = @{ "do" }
 end     = @{ "end" }
 ret     = @{ "ret" }
 true    = @{ "true" }
@@ -39,15 +62,33 @@ false   = @{ "false" }
 let     = @{ "let" }
 load    = @{ "load" }
 pipe    = @{ "pipe" }
+if      = @{ "if" }
+elif    = @{ "elif" }
+else    = @{ "else" }
+then    = @{ "then" }
 // can be ident
 it = @{ "it" }
 
 // Any alphanumeric string that does not begin with a digit except keywords
-ident         = @{ !(ASCII_DIGIT) ~ !(keyword ~ !ASCII_ALPHANUMERIC) ~ ASCII_ALPHANUMERIC+ }
-idents        = ${ (ident) ~ (ident_segment)* }
-ident_segment = _{ WHITESPACE ~ expr }
+ident     = @{ !(ASCII_DIGIT) ~ !(keyword ~ !ASCII_ALPHANUMERIC) ~ ASCII_ALPHANUMERIC+ }
+idents    = ${ ident ~ (ident_seg)* }
+ident_seg = _{ WHITESPACE ~ expr }
 
-expr = { pipeline | array | num | str | variable_declare | variable_assign | function | idents }
+expr  =  {
+    then_expr
+  | pipeline
+  | array
+  | num
+  | str
+  | variable_declare
+  | variable_assign
+  | if_expr
+  | function
+  | idents
+}
+exprs = _{
+    NLS ~ (expr ~ NLS)* ~ NLS
+}
 
 WHITESPACE = _{ " " }
 COMMENT    = _{ "/*" ~ (!"*/" ~ ANY)* ~ "*/" }

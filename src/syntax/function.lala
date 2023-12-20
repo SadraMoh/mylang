@@ -1,21 +1,21 @@
-fun emptyFun begin
+fun emptyFun do
 end
 
 fun askewFun
-begin end
+do end
 
-fun voidFun begin 
+fun voidFun do 
   ret
 end
 
-fun intFun begin
+fun intFun do
   ret 1
 end
 
-fun inputFun parameter begin
+fun inputFun parameter do
   ret parameter
 end
 
-fun inputsFun parameter1 parameter2 begin
+fun inputsFun parameter1 parameter2 do
   ret parameter1
 end
