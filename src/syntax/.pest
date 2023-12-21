@@ -1,5 +1,71 @@
 program = { SOI ~ exprs ~ EOI }
 
+keyword = @{
+    fun
+  | do
+  | end
+  | ret
+  | true
+  | false
+  | let
+  | load
+  | pipe
+  | if
+  | elif
+  | else
+  | not
+  | or
+  | and
+  | add
+  | sub
+  | div
+  | mul
+  | pow
+  | mod
+  | then
+}
+fun     = @{ "fun" }
+do      = @{ "do" }
+end     = @{ "end" }
+ret     = @{ "ret" }
+true    = @{ "true" }
+false   = @{ "false" }
+let     = @{ "let" }
+load    = @{ "load" }
+pipe    = @{ "pipe" }
+if      = @{ "if" }
+elif    = @{ "elif" }
+else    = @{ "else" }
+not     = @{ "not" }
+or      = @{ "or" }
+and     = @{ "and" }
+add     = @{ "add" | "+" }
+sub     = @{ "sub" | "-" }
+div     = @{ "div" | "/" }
+mul     = @{ "mul" | "*" }
+pow     = @{ "pow" | "^" }
+mod     = @{ "mod" | "%" }
+then    = @{ "then" }
+
+// can be ident
+it = @{ "it" }
+
+str  = @{ "'" ~ char* ~ "'" }
+char =  {
+    !("'") ~ ANY
+}
+
+bool  = @{ true | false }
+num   = _{ float | int }
+int   = @{ ASCII_DIGIT+ }
+float = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
+array =  { comma_sep }
+
+// Any alphanumeric string that does not begin with a digit except keywords
+ident     = @{ !(ASCII_DIGIT) ~ !(keyword ~ !ASCII_ALPHANUMERIC) ~ ASCII_ALPHANUMERIC+ }
+idents    = ${ (ident) ~ (ident_seg)* }
+ident_seg = _{ WHITESPACE ~ expr }
+
 function         =  { function_declare ~ NLS ~ function_block }
 function_declare = _{ fun ~ ident ~ function_params }
 function_params  =  { (ident)* }
@@ -25,65 +91,49 @@ if_expr  = { if ~ expr ~ NLS ~ do ~ exprs ~ (end | else_seg | elif_seg) }
 elif_seg = { elif ~ expr ~ NLS ~ do ~ exprs ~ (end | else_seg | elif_seg) }
 else_seg = { else ~ NLS ~ do ~ exprs ~ end }
 
-then_expr = { if ~ expr ~ then ~ expr ~ else ~ expr }
+a = { SOI ~ (binary_expr)* ~ EOI }
 
-str  = @{ "'" ~ char* ~ "'" }
-char =  {
-    !("'") ~ ANY
+// TODO: pack every other type of expr in this rule except unary, binary and ternery
+// then in each rule, | it with the other two expr
+logical_operand = @{ (value_expr | idents) }
+unary_op        =  { not | sub | add }
+unary_expr      =  { unary_op ~ expr }
+binary_op       = _{
+    or
+  | and
+  | add
+  | sub
+  | div
+  | mul
+  | pow
+  | mod
 }
+binary_expr     =  { logical_operand ~ binary_op ~ expr }
+ternary_expr    =  { logical_operand ~ then ~ logical_operand ~ else ~ logical_operand }
 
-bool  = @{ true | false }
-num   = _{ float | int }
-int   = @{ ASCII_DIGIT+ }
-float = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
-array =  { comma_sep }
-
-keyword = @{
-    fun
-  | do
-  | end
-  | ret
-  | true
-  | false
-  | let
-  | load
-  | pipe
-  | if
-  | elif
-  | else
-  | then
-}
-fun     = @{ "fun" }
-do      = @{ "do" }
-end     = @{ "end" }
-ret     = @{ "ret" }
-true    = @{ "true" }
-false   = @{ "false" }
-let     = @{ "let" }
-load    = @{ "load" }
-pipe    = @{ "pipe" }
-if      = @{ "if" }
-elif    = @{ "elif" }
-else    = @{ "else" }
-then    = @{ "then" }
-// can be ident
-it = @{ "it" }
-
-// Any alphanumeric string that does not begin with a digit except keywords
-ident     = @{ !(ASCII_DIGIT) ~ !(keyword ~ !ASCII_ALPHANUMERIC) ~ ASCII_ALPHANUMERIC+ }
-idents    = ${ ident ~ (ident_seg)* }
-ident_seg = _{ WHITESPACE ~ expr }
-
-expr  =  {
-    then_expr
-  | pipeline
-  | array
+value_expr = _{
+    array
+  | bool
   | num
   | str
-  | variable_declare
+}
+
+declaration_expr = _{
+    variable_declare
   | variable_assign
-  | if_expr
   | function
+}
+
+control_flow_expr = _{ if_expr }
+
+expr  =  {
+    ternary_expr
+  | unary_expr
+  | binary_expr
+  | pipeline
+  | value_expr
+  | declaration_expr
+  | control_flow_expr
   | idents
 }
 exprs = _{

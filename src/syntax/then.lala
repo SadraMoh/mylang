@@ -1,4 +1,4 @@
 
-if x then y else z
+x then y else z
 
-if hello 'hello' then 'hello' else 'bye'
+hello 'hello' then 'hello' else 'bye'
