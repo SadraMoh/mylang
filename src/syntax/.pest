@@ -1,6 +1,6 @@
 program = { SOI ~ exprs ~ EOI }
 
-keyword = @{
+keyword        = @{
     fun
   | do
   | end
@@ -16,36 +16,36 @@ keyword = @{
   | not
   | or
   | and
-  | add
-  | sub
-  | div
-  | mul
-  | pow
-  | mod
+  | addition
+  | subtraction
+  | division
+  | multiplication
+  | power
+  | modulo
   | then
 }
-fun     = @{ "fun" }
-do      = @{ "do" }
-end     = @{ "end" }
-ret     = @{ "ret" }
-true    = @{ "true" }
-false   = @{ "false" }
-let     = @{ "let" }
-load    = @{ "load" }
-pipe    = @{ "pipe" }
-if      = @{ "if" }
-elif    = @{ "elif" }
-else    = @{ "else" }
-not     = @{ "not" }
-or      = @{ "or" }
-and     = @{ "and" }
-add     = @{ "add" | "+" }
-sub     = @{ "sub" | "-" }
-div     = @{ "div" | "/" }
-mul     = @{ "mul" | "*" }
-pow     = @{ "pow" | "^" }
-mod     = @{ "mod" | "%" }
-then    = @{ "then" }
+fun            = @{ "fun" }
+do             = @{ "do" }
+end            = @{ "end" }
+ret            = @{ "ret" }
+true           = @{ "true" }
+false          = @{ "false" }
+let            = @{ "let" }
+load           = @{ "load" }
+pipe           = @{ "pipe" }
+if             = @{ "if" }
+elif           = @{ "elif" }
+else           = @{ "else" }
+not            = @{ "not" }
+or             = @{ "or" }
+and            = @{ "and" }
+addition       = @{ "add" | "+" }
+subtraction    = @{ "sub" | "-" }
+division       = @{ "div" | "/" }
+multiplication = @{ "mul" | "*" }
+power          = @{ "pow" | "^" }
+modulo         = @{ "mod" | "%" }
+then           = @{ "then" }
 
 // can be ident
 it = @{ "it" }
@@ -59,79 +59,80 @@ bool  = @{ true | false }
 num   = _{ float | int }
 int   = @{ ASCII_DIGIT+ }
 float = @{ ASCII_DIGIT+ ~ "." ~ ASCII_DIGIT* }
-array =  { comma_sep }
+arr   =  { comma_sep }
 
 // Any alphanumeric string that does not begin with a digit except keywords
 ident     = @{ !(ASCII_DIGIT) ~ !(keyword ~ !ASCII_ALPHANUMERIC) ~ ASCII_ALPHANUMERIC+ }
 idents    = ${ (ident) ~ (ident_seg)* }
 ident_seg = _{ WHITESPACE ~ expr }
 
-function         =  { function_declare ~ NLS ~ function_block }
-function_declare = _{ fun ~ ident ~ function_params }
-function_params  =  { (ident)* }
-function_block   = _{ do ~ NLS ~ function_body ~ NLS ~ end }
-function_body    =  { ((expr | function_return) ~ NLS)* }
-function_return  = _{ ret ~ (expr)* }
+func         =  { func_declare ~ NLS ~ func_block }
+func_declare = _{ fun ~ ident ~ func_params }
+func_params  =  { (ident)* }
+func_block   = _{ do ~ NLS ~ func_body ~ NLS ~ end }
+func_body    =  { ((expr | func_return) ~ NLS)* }
+func_return  = _{ ret ~ (expr)* }
 
-variable_declare = { let ~ ident ~ variable_init? }
-variable_init    = { load ~ expr }
-variable_assign  = { ident ~ load ~ expr }
+var_declare = { let ~ ident ~ var_init? }
+var_init    = { load ~ expr }
+assmnt      = { ident ~ load ~ expr }
 
 pipeline     =  { pipable_expr ~ pipeline_seg+ ~ !(pipe) }
 pipable_expr = _{ bool | num | str | idents }
 pipeline_seg =  { (NLS ~ pipe ~ pipable_expr) }
 
-comma_sep            = { (comma_separable_expr ~ ",")+ ~ comma_separable_expr? }
-comma_separable_expr = { bool | num | str | idents }
+comma_sep            =  { (comma_separable_expr ~ ",")+ ~ comma_separable_expr? }
+comma_separable_expr = _{ bool | num | str | idents }
 
-dot_sep            = { (comma_separable_expr ~ ".")+ ~ comma_separable_expr? }
-dot_separable_expr = { num | str | idents }
+dot_sep            =  { (dot_separable_expr ~ ".")+ ~ dot_separable_expr }
+dot_separable_expr = _{ bool | num | str | ident }
 
 if_expr  = { if ~ expr ~ NLS ~ do ~ exprs ~ (end | else_seg | elif_seg) }
 elif_seg = { elif ~ expr ~ NLS ~ do ~ exprs ~ (end | else_seg | elif_seg) }
 else_seg = { else ~ NLS ~ do ~ exprs ~ end }
 
-a = { SOI ~ (binary_expr)* ~ EOI }
-
 // TODO: pack every other type of expr in this rule except unary, binary and ternery
 // then in each rule, | it with the other two expr
-logical_operand = @{ (value_expr | idents) }
-unary_op        =  { not | sub | add }
+logical_operand = @{ (val_expr | idents) }
+unary_op        =  { not | subtraction | addition }
 unary_expr      =  { unary_op ~ expr }
 binary_op       = _{
     or
   | and
-  | add
-  | sub
-  | div
-  | mul
-  | pow
-  | mod
+  | addition
+  | subtraction
+  | division
+  | multiplication
+  | power
+  | modulo
 }
 binary_expr     =  { logical_operand ~ binary_op ~ expr }
 ternary_expr    =  { logical_operand ~ then ~ logical_operand ~ else ~ logical_operand }
 
-value_expr = _{
-    array
+val_expr = _{
+    arr
   | bool
   | num
   | str
 }
 
 declaration_expr = _{
-    variable_declare
-  | variable_assign
-  | function
+    var_declare
+  | assmnt
+  | func
 }
 
 control_flow_expr = _{ if_expr }
 
+member_access = @{ dot_sep }
+
 expr  =  {
-    ternary_expr
+    member_access
+  | ternary_expr
   | unary_expr
   | binary_expr
   | pipeline
-  | value_expr
+  | val_expr
   | declaration_expr
   | control_flow_expr
   | idents
