@@ -1,4 +1,5 @@
-program = { SOI ~ exprs ~ EOI }
+program = { SOI ~ body ~ EOI }
+body = _{ exprs }
 
 keyword        = @{
     fun
@@ -137,7 +138,7 @@ expr  =  {
   | control_flow_expr
   | idents
 }
-exprs = _{
+exprs = {
     NLS ~ (expr ~ NLS)* ~ NLS
 }
 

@@ -1,7 +1,7 @@
 #[derive(PartialEq, Debug, Clone)]
 pub enum AstNode {
     // Print(Box<AstNode>),
-    Integer(i32),
+    Int(i32),
     // DoublePrecisionFloat(f64),
     // MonadicOp {
     //     verb: MonadicVerb,
@@ -13,14 +13,21 @@ pub enum AstNode {
     //     rhs: Box<AstNode>,
     // },
     // Terms(Vec<AstNode>),
-    IsGlobal { ident: String, expr: Box<AstNode> },
+    VariableDeclaration {
+        ident: String,
+        init: Option<Box<AstNode>>,
+    },
+    Assignment {
+        ident: String,
+        value: Box<AstNode>,
+    },
     Ident(String),
-    // Str(CString),
+    Str(String),
 }
 
 #[derive(Debug)]
 pub enum Expr {
-    Integer(i32),
+    Int(i32),
     // BinOp {
     //     lhs: Box<Expr>,
     //     op: Op,
