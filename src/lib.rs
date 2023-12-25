@@ -14,15 +14,19 @@ mod tests {
         let result = syntax::parse(
             "
                 let a load 'hello'
+
+                print
+
+                print 'hello'
             ",
         )
         .expect("Expected parsable string");
 
-        println!("AST: {:?}", result);
+        // println!("AST: {:?}", result);
 
         let result = to_js_program(result);
 
-        println!("Transpiled: {:?}", result);
+        // println!("Transpiled: {:?}", result);
 
         let config = Config::default();
         let source_map: std::rc::Rc<SourceMap> = Default::default();

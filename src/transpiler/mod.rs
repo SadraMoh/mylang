@@ -1,17 +1,10 @@
 use super::syntax::AstNode;
 
 use swc_common::DUMMY_SP;
-use swc_ecma_ast::Decl;
-use swc_ecma_ast::Expr;
-use swc_ecma_ast::Ident;
-use swc_ecma_ast::Lit;
-use swc_ecma_ast::Number;
-use swc_ecma_ast::Program;
-use swc_ecma_ast::Script;
-use swc_ecma_ast::Stmt;
-use swc_ecma_ast::Str;
-use swc_ecma_ast::VarDecl;
-use swc_ecma_ast::VarDeclarator;
+use swc_ecma_ast::{
+    CallExpr, Callee, Decl, Expr, ExprOrSpread, ExprStmt, Ident, Lit, MemberExpr, MemberProp,
+    Number, Program, Script, Stmt, Str, VarDecl, VarDeclarator,
+};
 
 pub fn to_js_program(root: Vec<AstNode>) -> Program {
     let body: Vec<Stmt> = root.into_iter().map(to_js_stmt).collect::<Vec<_>>();
@@ -47,6 +40,37 @@ pub fn to_js_stmt(node: AstNode) -> Stmt {
                 }],
             })))
         }
+        AstNode::Print(expr) => {
+            let args = vec![expr.and_then(|f| {
+                Some(ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(to_js_expr(*f)),
+                })
+            })];
+            let args = args.into_iter().filter_map(|f| f).collect();
+
+            Stmt::Expr(ExprStmt {
+                span: DUMMY_SP,
+                expr: Box::new(Expr::Call(CallExpr {
+                    span: DUMMY_SP,
+                    type_args: None,
+                    args: args,
+                    callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
+                        span: DUMMY_SP,
+                        obj: Box::new(Expr::Ident(Ident {
+                            span: DUMMY_SP,
+                            optional: false,
+                            sym: "console".into(),
+                        })),
+                        prop: MemberProp::Ident(Ident {
+                            span: DUMMY_SP,
+                            optional: false,
+                            sym: "log".into(),
+                        }),
+                    }))),
+                })),
+            })
+        }
         _ => unimplemented!("to_js_stmt not handled for Node: [{node:?}]"),
     }
 }
@@ -54,13 +78,13 @@ pub fn to_js_stmt(node: AstNode) -> Stmt {
 pub fn to_js_expr(node: AstNode) -> Expr {
     match node {
         AstNode::Int(val) => Expr::Lit(Lit::Num(Number {
-            raw: None,
             span: DUMMY_SP,
+            raw: None,
             value: val as f64,
         })),
         AstNode::Str(val) => Expr::Lit(Lit::Str(Str {
-            raw: None,
             span: DUMMY_SP,
+            raw: None,
             value: val.into(),
         })),
         _ => unimplemented!("to_js_expr not handled for Node: [{node:?}]"),

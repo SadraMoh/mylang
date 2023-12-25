@@ -1,6 +1,6 @@
 #[derive(PartialEq, Debug, Clone)]
 pub enum AstNode {
-    // Print(Box<AstNode>),
+    Print(Option<Box<AstNode>>),
     Int(i32),
     // DoublePrecisionFloat(f64),
     // MonadicOp {

@@ -1,0 +1,11 @@
+print
+
+print 'hello'
+
+print 'hello' 'world'
+
+print hello 'world
+
+print if hello is 'world' do 'yes' else do 'no' end
+
+print hello is world then 'yes' else 'no'

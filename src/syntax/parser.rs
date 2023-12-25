@@ -34,6 +34,15 @@ pub fn parse_expr(pairs: Pairs<Rule>) -> Expr {
 fn build_ast_from_expr(pair: pest::iterators::Pair<Rule>) -> AstNode {
     match pair.as_rule() {
         Rule::expr => build_ast_from_expr(pair.into_inner().next().unwrap()),
+        Rule::print_expr => {
+            let mut pair = pair.into_inner();
+            let _print = pair.next().expect("Expected 'print' in an [print_expr:0]");
+            let expr = pair
+                .next()
+                .and_then(|ex| Some(Box::new(build_ast_from_expr(ex))));
+
+            AstNode::Print(expr)
+        }
         Rule::assmnt => {
             let mut pair = pair.into_inner();
             let ident = pair.next().expect("Expected [ident] in an [assmnt:0]");
@@ -133,6 +142,18 @@ mod tests {
                 let b load 1
                 
                 b load 'hello'
+            ",
+        );
+        println!("result: {:?}", result);
+    }
+
+    #[test]
+    fn print() {
+        let result = super::parse(
+            "
+                print
+
+                print 'hello world'
             ",
         );
         println!("result: {:?}", result);

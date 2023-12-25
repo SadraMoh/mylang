@@ -1,5 +1,5 @@
-program = { SOI ~ body ~ EOI }
-body = _{ exprs }
+program =  { SOI ~ body ~ EOI }
+body    = _{ exprs }
 
 keyword        = @{
     fun
@@ -24,6 +24,12 @@ keyword        = @{
   | power
   | modulo
   | then
+  | is
+  | gt
+  | lt
+  | gte
+  | lte
+  | print
 }
 fun            = @{ "fun" }
 do             = @{ "do" }
@@ -47,6 +53,12 @@ multiplication = @{ "mul" | "*" }
 power          = @{ "pow" | "^" }
 modulo         = @{ "mod" | "%" }
 then           = @{ "then" }
+is             = @{ "is" }
+gt             = @{ "gt" | ">" }
+lt             = @{ "lt" | "<" }
+gte            = @{ "gte" | ">=" }
+lte            = @{ "lte" | "<=" }
+print          = @{ "print" }
 
 // can be ident
 it = @{ "it" }
@@ -95,9 +107,9 @@ else_seg = { else ~ NLS ~ do ~ exprs ~ end }
 // TODO: pack every other type of expr in this rule except unary, binary and ternery
 // then in each rule, | it with the other two expr
 logical_operand = @{ (val_expr | idents) }
-unary_op        =  { not | subtraction | addition }
+unary_op        = @{ not | subtraction | addition }
 unary_expr      =  { unary_op ~ expr }
-binary_op       = _{
+binary_op       = @{
     or
   | and
   | addition
@@ -106,6 +118,11 @@ binary_op       = _{
   | multiplication
   | power
   | modulo
+  | is
+  | gt
+  | lt
+  | gte
+  | lte
 }
 binary_expr     =  { logical_operand ~ binary_op ~ expr }
 ternary_expr    =  { logical_operand ~ then ~ logical_operand ~ else ~ logical_operand }
@@ -127,7 +144,9 @@ control_flow_expr = _{ if_expr }
 
 member_access = @{ dot_sep }
 
-expr  =  {
+print_expr = { print ~ expr? }
+
+expr  = {
     member_access
   | ternary_expr
   | unary_expr
@@ -136,6 +155,7 @@ expr  =  {
   | val_expr
   | declaration_expr
   | control_flow_expr
+  | print_expr
   | idents
 }
 exprs = {
