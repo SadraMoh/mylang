@@ -10,3 +10,6 @@ clap = { version = "4.4.11", features = ["derive"] }
 lazy_static = "1.4.0"
 pest = "2.7.5"
 pest_derive = "2.7.5"
+swc_common = "0.33.12"
+swc_ecma_ast = "0.110.15"
+swc_ecma_codegen = "0.146.47"
