@@ -17,8 +17,10 @@ mod tests {
 
                 if a is 'hello' do
                     print 'yes'
-                else do
+                elif a is 'bye' do
                     print 'no'
+                else do
+                    print 'neither'
                 end
             ",
         )

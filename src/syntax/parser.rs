@@ -107,9 +107,10 @@ fn build_ast_from_expr(pair: pest::iterators::Pair<Rule>) -> AstNode {
                 .next()
                 .expect("Expected [expr] inf [if_expr|elif_seg:3]");
 
-            let alt = pair
-                .next()
-                .and_then(|inner| Some(Box::new(build_ast_from_expr(inner))));
+            let alt = pair.next().and_then(|inner| match inner.as_rule() {
+                Rule::end => None,
+                _ => Some(Box::new(build_ast_from_expr(inner))),
+            });
 
             AstNode::Conditional {
                 cond: Box::new(build_ast_from_expr(cond_expr)),
