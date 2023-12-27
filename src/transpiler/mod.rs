@@ -1,9 +1,12 @@
+use crate::syntax::BinOp;
+
 use super::syntax::AstNode;
 
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    CallExpr, Callee, Decl, Expr, ExprOrSpread, ExprStmt, Ident, Lit, MemberExpr, MemberProp,
-    Number, Program, Script, Stmt, Str, VarDecl, VarDeclarator,
+    BinExpr, BinaryOp, BlockStmt, CallExpr, Callee, Decl, Expr, ExprOrSpread, ExprStmt, Ident,
+    IfStmt, Lit, MemberExpr, MemberProp, Number, Program, Script, Stmt, Str, VarDecl,
+    VarDeclarator,
 };
 
 pub fn to_js_program(root: Vec<AstNode>) -> Program {
@@ -71,6 +74,16 @@ pub fn to_js_stmt(node: AstNode) -> Stmt {
                 })),
             })
         }
+        AstNode::Conditional { cond, body, alt } => Stmt::If(IfStmt {
+            span: DUMMY_SP,
+            test: Box::new(to_js_expr(*cond)),
+            alt: alt.and_then(|inner| Some(Box::new(to_js_stmt(*inner)))),
+            cons: Box::new(to_js_stmt(*body)),
+        }),
+        AstNode::Exprs(exprs) => Stmt::Block(BlockStmt {
+            span: DUMMY_SP,
+            stmts: exprs.into_iter().map(|f| to_js_stmt(*f)).collect(),
+        }),
         _ => unimplemented!("to_js_stmt not handled for Node: [{node:?}]"),
     }
 }
@@ -87,6 +100,35 @@ pub fn to_js_expr(node: AstNode) -> Expr {
             raw: None,
             value: val.into(),
         })),
+        AstNode::Ident(val) => Expr::Ident(Ident {
+            span: DUMMY_SP,
+            optional: false,
+            sym: val.into(),
+        }),
+        AstNode::BinOp { lhs, op, rhs } => Expr::Bin(BinExpr {
+            span: DUMMY_SP,
+            left: Box::new(to_js_expr(*lhs)),
+            op: to_js_bin_op(op),
+            right: Box::new(to_js_expr(*rhs)),
+        }),
         _ => unimplemented!("to_js_expr not handled for Node: [{node:?}]"),
+    }
+}
+
+pub fn to_js_bin_op(op: BinOp) -> BinaryOp {
+    match op {
+        BinOp::Or => BinaryOp::LogicalOr,
+        BinOp::And => BinaryOp::LogicalAnd,
+        BinOp::Addition => BinaryOp::Add,
+        BinOp::Subtraction => BinaryOp::Sub,
+        BinOp::Division => BinaryOp::Div,
+        BinOp::Multiplication => BinaryOp::Mul,
+        BinOp::Power => BinaryOp::Exp,
+        BinOp::Modulo => BinaryOp::Mod,
+        BinOp::Is => BinaryOp::EqEqEq,
+        BinOp::Gt => BinaryOp::Gt,
+        BinOp::Lt => BinaryOp::Lt,
+        BinOp::Gte => BinaryOp::GtEq,
+        BinOp::Lte => BinaryOp::LtEq,
     }
 }

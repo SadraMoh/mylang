@@ -15,9 +15,11 @@ mod tests {
             "
                 let a load 'hello'
 
-                print
-
-                print 'hello'
+                if a is 'hello' do
+                    print 'yes'
+                else do
+                    print 'no'
+                end
             ",
         )
         .expect("Expected parsable string");

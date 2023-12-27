@@ -2,6 +2,19 @@
 pub enum AstNode {
     Print(Option<Box<AstNode>>),
     Int(i32),
+    Ident(String),
+    Str(String),
+    BinOp {
+        lhs: Box<AstNode>,
+        op: BinOp,
+        rhs: Box<AstNode>,
+    },
+    Conditional {
+        cond: Box<AstNode>,
+        body: Box<AstNode>,
+        alt: Option<Box<AstNode>>,
+    },
+    Exprs(Vec<Box<AstNode>>),
     // DoublePrecisionFloat(f64),
     // MonadicOp {
     //     verb: MonadicVerb,
@@ -21,28 +34,52 @@ pub enum AstNode {
         ident: String,
         value: Box<AstNode>,
     },
-    Ident(String),
-    Str(String),
 }
 
 #[derive(Debug)]
 pub enum Expr {
     Int(i32),
-    // BinOp {
-    //     lhs: Box<Expr>,
-    //     op: Op,
-    //     rhs: Box<Expr>,
-    // },
     // UnaryOp {
     //     op: Op,
     //     rhs: Box<Expr>,
     // },
 }
 
-#[derive(Debug)]
-pub enum Op {
-    Add,
-    Subtract,
-    Multiply,
-    Divide,
+#[derive(Debug, PartialEq, Clone)]
+pub enum BinOp {
+    Or,
+    And,
+    Addition,
+    Subtraction,
+    Division,
+    Multiplication,
+    Power,
+    Modulo,
+    Is,
+    Gt,
+    Lt,
+    Gte,
+    Lte,
+}
+
+impl TryFrom<&str> for BinOp {
+    type Error = String;
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        Ok(match value {
+            "or" => BinOp::Or,
+            "and" => BinOp::And,
+            "addition" => BinOp::Addition,
+            "subtraction" => BinOp::Subtraction,
+            "division" => BinOp::Division,
+            "multiplication" => BinOp::Multiplication,
+            "power" => BinOp::Power,
+            "modulo" => BinOp::Modulo,
+            "is" => BinOp::Is,
+            "gt" => BinOp::Gt,
+            "lt" => BinOp::Lt,
+            "gte" => BinOp::Gte,
+            "lte" => BinOp::Lte,
+            un => panic!("Unexpected string {un:?}"),
+        })
+    }
 }

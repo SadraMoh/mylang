@@ -95,6 +95,81 @@ fn build_ast_from_expr(pair: pest::iterators::Pair<Rule>) -> AstNode {
                 .expect(format!("Unable to parse {} to int", int).as_str());
             AstNode::Int(int)
         }
+        Rule::if_expr | Rule::elif_seg => {
+            let mut pair = pair.into_inner();
+            let _if = pair.next().expect("Expected 'if' in [if_expr|elif_seg:0]");
+            let cond_expr = pair
+                .next()
+                .expect("Expected condition as [expr] in [if_expr|elif_seg:1]");
+            let _do = pair.next().expect("Expected 'do' in [if_expr|elif_seg:2]");
+
+            let body_expr = pair
+                .next()
+                .expect("Expected [expr] inf [if_expr|elif_seg:3]");
+
+            let alt = pair
+                .next()
+                .and_then(|inner| Some(Box::new(build_ast_from_expr(inner))));
+
+            AstNode::Conditional {
+                cond: Box::new(build_ast_from_expr(cond_expr)),
+                body: Box::new(build_ast_from_expr(body_expr)),
+                alt: alt,
+            }
+        }
+        Rule::else_seg => {
+            let mut pair = pair.into_inner();
+            let _else = pair.next().expect("Expected 'else' in [else_seg:0]");
+            let _do = pair.next().expect("Expected 'do' in [else_seg:1]");
+
+            let body_expr = pair.next().expect("Expected [expr] in [else_seg:2]");
+
+            build_ast_from_expr(body_expr)
+        }
+        Rule::exprs => {
+            let pair = pair.into_inner();
+
+            let mut res = Vec::new();
+            for expr in pair.into_iter() {
+                res.push(Box::new(build_ast_from_expr(expr)));
+            }
+
+            AstNode::Exprs(res)
+        }
+        Rule::binary_expr => {
+            let mut pair = pair.into_inner();
+            let logical_operand = pair
+                .next()
+                .expect("Expected [logical_operand] in [binary_expr:0]");
+            let binary_op = pair
+                .next()
+                .expect("Expected [binary_op] in [binary_expr:1]");
+            let expr = pair.next().expect("Expected [expr] in [binary_expr:2]");
+
+            AstNode::BinOp {
+                lhs: Box::new(build_ast_from_expr(logical_operand)),
+                op: binary_op.as_str().try_into().unwrap(),
+                rhs: Box::new(build_ast_from_expr(expr)),
+            }
+        }
+        Rule::logical_operand => {
+            let mut pair = pair.into_inner();
+            build_ast_from_expr(pair.next().expect("Expected [_] in [logical_operand:0]"))
+        }
+        Rule::idents => {
+            let pair = pair.into_inner();
+            let elements: Vec<_> = pair.into_iter().collect();
+
+            match elements.len() {
+                0 => panic!("Expected at least one member in an [idents]"),
+                1 => {}
+                _ => unimplemented!("Multiple elements for [idents] is not implemented"),
+            };
+
+            // singlle
+            let ident = elements.first().unwrap();
+            AstNode::Ident(ident.as_str().into())
+        }
         unknown_expr => panic!("Unexpected expression: {:?}", unknown_expr),
     }
 }
@@ -154,6 +229,20 @@ mod tests {
                 print
 
                 print 'hello world'
+            ",
+        );
+        println!("result: {:?}", result);
+    }
+
+    #[test]
+    fn if_expression() {
+        let result = super::parse(
+            "
+                if cond is 'hello' do
+                    print 'yes'
+                else do
+                    print 'no'
+                end
             ",
         );
         println!("result: {:?}", result);
