@@ -76,8 +76,7 @@ arr   =  { comma_sep }
 
 // Any alphanumeric string that does not begin with a digit except keywords
 ident     = @{ !(ASCII_DIGIT) ~ !(keyword ~ !ASCII_ALPHANUMERIC) ~ ASCII_ALPHANUMERIC+ }
-idents    = ${ (ident) ~ (ident_seg)* }
-ident_seg = _{ WHITESPACE ~ expr }
+idents    = { ident ~ (dot_separable_expr)* }
 
 func         =  { func_declare ~ NLS ~ func_block }
 func_declare = _{ fun ~ ident ~ func_params }
@@ -106,9 +105,9 @@ else_seg = { else ~ NLS ~ do ~ exprs ~ end }
 
 // TODO: pack every other type of expr in this rule except unary, binary and ternery
 // then in each rule, | it with the other two expr
-logical_operand = @{ (val_expr | idents) }
-unary_op        = @{ not | subtraction | addition }
-unary_expr      =  { unary_op ~ expr }
+logical_operand = ${ (val_expr | idents) }
+unary_op        = @{ not | "-" | "+" }
+unary_expr      = ${ unary_op ~ expr }
 binary_op       = @{
     or
   | and

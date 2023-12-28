@@ -21,6 +21,10 @@ pub enum AstNode {
         body: Vec<Box<AstNode>>,
     },
     ReturnExpression(Box<AstNode>),
+    CallExpression {
+        callee: String,
+        args: Vec<Box<AstNode>>,
+    },
     // DoublePrecisionFloat(f64),
     // MonadicOp {
     //     verb: MonadicVerb,
