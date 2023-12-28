@@ -4,9 +4,9 @@ use super::syntax::AstNode;
 
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    BinExpr, BinaryOp, BlockStmt, CallExpr, Callee, Decl, Expr, ExprOrSpread, ExprStmt, Ident,
-    IfStmt, Lit, MemberExpr, MemberProp, Number, Program, Script, Stmt, Str, VarDecl,
-    VarDeclarator,
+    AssignExpr, BinExpr, BinaryOp, BindingIdent, BlockStmt, CallExpr, Callee, Decl, Expr,
+    ExprOrSpread, ExprStmt, FnDecl, Function, Ident, IfStmt, Lit, MemberExpr, MemberProp, Number,
+    Param, PatOrExpr, Program, ReturnStmt, Script, Stmt, Str, VarDecl, VarDeclarator,
 };
 
 pub fn to_js_program(root: Vec<AstNode>) -> Program {
@@ -84,6 +84,60 @@ pub fn to_js_stmt(node: AstNode) -> Stmt {
             span: DUMMY_SP,
             stmts: exprs.into_iter().map(|f| to_js_stmt(*f)).collect(),
         }),
+        AstNode::ReturnExpression(val) => Stmt::Return(ReturnStmt {
+            span: DUMMY_SP,
+            arg: Some(Box::new(to_js_expr(*val))),
+        }),
+        AstNode::FunctionDeclaration {
+            ident,
+            params,
+            body,
+        } => {
+            let params = params
+                .into_iter()
+                .map(|param| Param {
+                    span: DUMMY_SP,
+                    decorators: Vec::new(),
+                    pat: swc_ecma_ast::Pat::Ident(BindingIdent {
+                        type_ann: None,
+                        id: Ident {
+                            span: DUMMY_SP,
+                            optional: false,
+                            sym: param.into(),
+                        },
+                    }),
+                })
+                .collect();
+
+            let body = body.into_iter().map(|expr| to_js_stmt(*expr)).collect();
+
+            Stmt::Decl(Decl::Fn(FnDecl {
+                declare: false,
+                function: Box::new(Function {
+                    span: DUMMY_SP,
+                    decorators: Vec::new(),
+                    is_async: false,
+                    is_generator: false,
+                    return_type: None,
+                    type_params: None,
+                    params,
+                    body: Some(BlockStmt {
+                        span: DUMMY_SP,
+                        stmts: body,
+                    }),
+                }),
+                ident: Ident {
+                    span: DUMMY_SP,
+                    optional: false,
+                    sym: ident.into(),
+                },
+            }))
+        }
+        // Expression Statements
+        AstNode::Int(_) | AstNode::Str(_) | AstNode::Ident(_) => Stmt::Expr(ExprStmt {
+            span: DUMMY_SP,
+            expr: Box::new(to_js_expr(node)),
+        }),
         _ => unimplemented!("to_js_stmt not handled for Node: [{node:?}]"),
     }
 }
@@ -111,6 +165,17 @@ pub fn to_js_expr(node: AstNode) -> Expr {
             op: to_js_bin_op(op),
             right: Box::new(to_js_expr(*rhs)),
         }),
+        AstNode::Assignment { ident, value } => Expr::Assign(AssignExpr {
+            span: DUMMY_SP,
+            left: PatOrExpr::Expr(Box::new(Expr::Ident(Ident {
+                span: DUMMY_SP,
+                optional: false,
+                sym: ident.into(),
+            }))),
+            op: swc_ecma_ast::AssignOp::Assign,
+            right: Box::new(to_js_expr(*value)),
+        }),
+
         _ => unimplemented!("to_js_expr not handled for Node: [{node:?}]"),
     }
 }

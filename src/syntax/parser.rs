@@ -171,6 +171,39 @@ fn build_ast_from_expr(pair: pest::iterators::Pair<Rule>) -> AstNode {
             let ident = elements.first().unwrap();
             AstNode::Ident(ident.as_str().into())
         }
+        Rule::func => {
+            let mut pair = pair.into_inner();
+            let _fun = pair.next().expect("Expected 'fun' at [func:0]");
+            let func_ident = pair.next().expect("Expected [ident] at [func:1]");
+            let func_params = pair.next().expect("Expected [func_params] at [func:2]");
+
+            let param = func_params.into_inner();
+            let params: Vec<_> = param.into_iter().map(|p| p.as_str().to_string()).collect();
+
+            let _do = pair.next().expect("Expected 'do' at [func:3]");
+
+            let func_body = pair.next().expect("Expected [func_body] at [func:4]");
+            let body: Vec<_> = func_body
+                .into_inner()
+                .into_iter()
+                .map(|p| Box::new(build_ast_from_expr(p)))
+                .collect();
+
+            let _end = pair.next().expect("Expected 'end' at [func:5]");
+
+            AstNode::FunctionDeclaration {
+                ident: func_ident.as_str().into(),
+                params: params,
+                body: body,
+            }
+        }
+        Rule::func_return => {
+            let mut pair = pair.into_inner();
+            let _ret = pair.next().expect("Expected 'ret' at [func_return:0]");
+            let expr = pair.next().expect("Expected [expr] at [func_return:1]");
+
+            AstNode::ReturnExpression(Box::new(build_ast_from_expr(expr)))
+        }
         unknown_expr => panic!("Unexpected expression: {:?}", unknown_expr),
     }
 }
@@ -243,6 +276,18 @@ mod tests {
                     print 'yes'
                 else do
                     print 'no'
+                end
+            ",
+        );
+        println!("result: {:?}", result);
+    }
+
+    #[test]
+    fn function_declaration() {
+        let result = super::parse(
+            "
+                fun addition x y do
+                    ret x add y
                 end
             ",
         );

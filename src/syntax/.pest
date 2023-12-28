@@ -84,7 +84,7 @@ func_declare = _{ fun ~ ident ~ func_params }
 func_params  =  { (ident)* }
 func_block   = _{ do ~ NLS ~ func_body ~ NLS ~ end }
 func_body    =  { ((expr | func_return) ~ NLS)* }
-func_return  = _{ ret ~ (expr)* }
+func_return  = { ret ~ (expr)* }
 
 var_declare = { let ~ ident ~ var_init? }
 var_init    = { load ~ expr }

@@ -13,14 +13,9 @@ mod tests {
     fn transpile() {
         let result = syntax::parse(
             "
-                let a load 'hello'
-
-                if a is 'hello' do
-                    print 'yes'
-                elif a is 'bye' do
-                    print 'no'
-                else do
-                    print 'neither'
+                fun addition x y do
+                   'hello'
+                    ret x add y
                 end
             ",
         )
