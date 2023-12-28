@@ -214,6 +214,37 @@ fn build_ast_from_expr(pair: pest::iterators::Pair<Rule>) -> AstNode {
             }
         }
         Rule::ident => AstNode::Ident(pair.as_str().into()),
+        Rule::pipeline => {
+            let pairs = pair.into_inner();
+            let pairs: Vec<_> = pairs.collect();
+
+            match pairs.as_slice() {
+                [] => {
+                    panic!("Expected [pipeline] to contain at least one [pipable_expr] and one [pipeline_seg")
+                }
+                [_] => {
+                    panic!("Expected [pipeline] to contain at least one [pipeline_seg]")
+                }
+                [start, segments @ ..] => {
+                    let mut steps = Vec::with_capacity(1 + segments.len());
+                    steps.push(Box::new(build_ast_from_expr(start.clone())));
+                    segments.iter().for_each(|seg| {
+                        steps.push(Box::new(build_ast_from_expr(seg.clone())));
+                    });
+
+                    AstNode::PipelineExpression(steps)
+                }
+            }
+        }
+        Rule::pipeline_seg => {
+            let mut pairs = pair.into_inner();
+            let _pipe = pairs.next().expect("Expected 'pipe' at [pipeline_seg:0]");
+            let expr = pairs
+                .next()
+                .expect("Expected [pipable_expr] at [pipable_expr:1]");
+
+            build_ast_from_expr(expr)
+        }
         unknown_expr => panic!("Unexpected expression: {:?}", unknown_expr),
     }
 }
@@ -313,6 +344,20 @@ mod tests {
                 addition x y z
 
                 hello 'world' boop
+            ",
+        );
+        println!("result: {:?}", result);
+    }
+
+    #[test]
+    fn pipeline() {
+        let result = super::parse(
+            "
+                15
+                    pipe addOne it
+                    pipe addFive it 
+                    pipe addition 'love you ' it
+                    pipe addition it ' times'
             ",
         );
         println!("result: {:?}", result);

@@ -14,9 +14,14 @@ mod tests {
         let result = syntax::parse(
             "
                 fun addition x y do
-                   'hello'
                     ret x add y
                 end
+
+                5 pipe addition 10 it
+
+                let result load 1
+                    pipe addition it 5
+                    pipe addition it 10
             ",
         )
         .expect("Expected parsable string");

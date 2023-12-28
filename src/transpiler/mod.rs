@@ -1,12 +1,10 @@
-use crate::syntax::BinOp;
-
-use super::syntax::AstNode;
-
+use super::syntax::{AstNode, BinOp};
 use swc_common::DUMMY_SP;
 use swc_ecma_ast::{
-    AssignExpr, BinExpr, BinaryOp, BindingIdent, BlockStmt, CallExpr, Callee, Decl, Expr,
-    ExprOrSpread, ExprStmt, FnDecl, Function, Ident, IfStmt, Lit, MemberExpr, MemberProp, Number,
-    Param, PatOrExpr, Program, ReturnStmt, Script, Stmt, Str, VarDecl, VarDeclarator,
+    ArrowExpr, AssignExpr, BinExpr, BinaryOp, BindingIdent, BlockStmt, BlockStmtOrExpr, CallExpr,
+    Callee, Decl, Expr, ExprOrSpread, ExprStmt, FnDecl, Function, Ident, IfStmt, Lit, MemberExpr,
+    MemberProp, Number, Param, ParenExpr, PatOrExpr, Program, ReturnStmt, Script, Stmt, Str,
+    VarDecl, VarDeclarator,
 };
 
 pub fn to_js_program(root: Vec<AstNode>) -> Program {
@@ -42,37 +40,6 @@ pub fn to_js_stmt(node: AstNode) -> Stmt {
                     init: init,
                 }],
             })))
-        }
-        AstNode::Print(expr) => {
-            let args = vec![expr.and_then(|f| {
-                Some(ExprOrSpread {
-                    spread: None,
-                    expr: Box::new(to_js_expr(*f)),
-                })
-            })];
-            let args = args.into_iter().filter_map(|f| f).collect();
-
-            Stmt::Expr(ExprStmt {
-                span: DUMMY_SP,
-                expr: Box::new(Expr::Call(CallExpr {
-                    span: DUMMY_SP,
-                    type_args: None,
-                    args: args,
-                    callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
-                        span: DUMMY_SP,
-                        obj: Box::new(Expr::Ident(Ident {
-                            span: DUMMY_SP,
-                            optional: false,
-                            sym: "console".into(),
-                        })),
-                        prop: MemberProp::Ident(Ident {
-                            span: DUMMY_SP,
-                            optional: false,
-                            sym: "log".into(),
-                        }),
-                    }))),
-                })),
-            })
         }
         AstNode::Conditional { cond, body, alt } => Stmt::If(IfStmt {
             span: DUMMY_SP,
@@ -134,10 +101,17 @@ pub fn to_js_stmt(node: AstNode) -> Stmt {
             }))
         }
         // Expression Statements
-        AstNode::Int(_) | AstNode::Str(_) | AstNode::Ident(_) => Stmt::Expr(ExprStmt {
+        AstNode::Int(_)
+        | AstNode::Str(_)
+        | AstNode::Ident(_)
+        | AstNode::PipelineExpression(_)
+        | AstNode::Assignment { ident: _, value: _ }
+        | AstNode::CallExpression { callee: _, args: _ }
+        | AstNode::Print(_) => Stmt::Expr(ExprStmt {
             span: DUMMY_SP,
             expr: Box::new(to_js_expr(node)),
         }),
+
         _ => unimplemented!("to_js_stmt not handled for Node: [{node:?}]"),
     }
 }
@@ -165,6 +139,34 @@ pub fn to_js_expr(node: AstNode) -> Expr {
             op: to_js_bin_op(op),
             right: Box::new(to_js_expr(*rhs)),
         }),
+        AstNode::Print(expr) => {
+            let args = vec![expr.and_then(|f| {
+                Some(ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(to_js_expr(*f)),
+                })
+            })];
+            let args = args.into_iter().filter_map(|f| f).collect();
+
+            Expr::Call(CallExpr {
+                span: DUMMY_SP,
+                type_args: None,
+                args: args,
+                callee: Callee::Expr(Box::new(Expr::Member(MemberExpr {
+                    span: DUMMY_SP,
+                    obj: Box::new(Expr::Ident(Ident {
+                        span: DUMMY_SP,
+                        optional: false,
+                        sym: "console".into(),
+                    })),
+                    prop: MemberProp::Ident(Ident {
+                        span: DUMMY_SP,
+                        optional: false,
+                        sym: "log".into(),
+                    }),
+                }))),
+            })
+        }
         AstNode::Assignment { ident, value } => Expr::Assign(AssignExpr {
             span: DUMMY_SP,
             left: PatOrExpr::Expr(Box::new(Expr::Ident(Ident {
@@ -175,6 +177,59 @@ pub fn to_js_expr(node: AstNode) -> Expr {
             op: swc_ecma_ast::AssignOp::Assign,
             right: Box::new(to_js_expr(*value)),
         }),
+        AstNode::CallExpression { callee, args } => Expr::Call(CallExpr {
+            span: DUMMY_SP,
+            type_args: None,
+            callee: Callee::Expr(Box::new(Expr::Ident(Ident {
+                span: DUMMY_SP,
+                optional: false,
+                sym: callee.into(),
+            }))),
+            args: args
+                .into_iter()
+                .map(|arg| ExprOrSpread {
+                    spread: None,
+                    expr: Box::new(to_js_expr(*arg)),
+                })
+                .collect(),
+        }),
+        AstNode::PipelineExpression(steps) => {
+            let mut stmts: Vec<Stmt> = Vec::with_capacity(steps.len() + 2);
+            stmts.push(to_js_stmt(AstNode::VariableDeclaration {
+                ident: "it".into(),
+                init: None,
+            }));
+            steps.into_iter().for_each(|step| {
+                stmts.push(to_js_stmt(AstNode::Assignment {
+                    ident: "it".into(),
+                    value: step,
+                }))
+            });
+            stmts.push(to_js_stmt(AstNode::ReturnExpression(Box::new(
+                AstNode::Ident("it".into()),
+            ))));
+
+            Expr::Call(CallExpr {
+                span: DUMMY_SP,
+                args: Vec::new(),
+                type_args: None,
+                callee: Callee::Expr(Box::new(Expr::Paren(ParenExpr {
+                    span: DUMMY_SP,
+                    expr: Box::new(Expr::Arrow(ArrowExpr {
+                        span: DUMMY_SP,
+                        params: Vec::new(),
+                        is_async: false,
+                        is_generator: false,
+                        type_params: None,
+                        return_type: None,
+                        body: Box::new(BlockStmtOrExpr::BlockStmt(BlockStmt {
+                            span: DUMMY_SP,
+                            stmts,
+                        })),
+                    })),
+                }))),
+            })
+        }
 
         _ => unimplemented!("to_js_expr not handled for Node: [{node:?}]"),
     }

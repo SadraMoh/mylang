@@ -25,6 +25,7 @@ pub enum AstNode {
         callee: String,
         args: Vec<Box<AstNode>>,
     },
+    PipelineExpression(Vec<Box<AstNode>>),
     // DoublePrecisionFloat(f64),
     // MonadicOp {
     //     verb: MonadicVerb,
