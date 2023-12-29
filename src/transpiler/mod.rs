@@ -18,16 +18,16 @@ mod tests {
     fn transpiles() {
         let result = super::transpile(
             "
-            fun addition x y do
-                ret x add y
-            end
+                fun addition x y do
+                    ret x add y
+                end
 
-            5 pipe addition 10 it
+                5 pipe addition 10 it
 
-            let result load 1
-                pipe addition it 5
-                pipe addition it 10
-        ",
+                let result load 1
+                    pipe addition it 5
+                    pipe addition it 10
+            ",
         );
 
         println!("Emitted: {result}")

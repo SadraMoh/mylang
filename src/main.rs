@@ -1,29 +1,18 @@
-use std::{env, fs};
+use mylang::transpiler::transpile;
+use std::{
+    env, fs,
+    io::{self, Write},
+};
 
-use mylang::syntax::{parse_expr, Rule};
-use pest::Parser;
-
-fn main() {
+fn main() -> io::Result<()> {
     let args: Vec<String> = env::args().collect();
     let filename = args[1].clone();
 
-    for line in fs::read_to_string(filename)
-        .expect("Unable to read file")
-        .lines()
-    {
-        match mylang::syntax::LangParser::parse(Rule::program, &line) {
-            Ok(mut pairs) => {
-                println!(
-                    "Parsed: {:#?}",
-                    parse_expr(
-                        // inner of expr
-                        pairs.next().unwrap().into_inner()
-                    )
-                );
-            }
-            Err(e) => {
-                eprintln!("Parse failed: {:?}", e);
-            }
-        }
-    }
+    let content = fs::read_to_string(filename).expect("Unable to read file");
+
+    let js = transpile(&content);
+
+    io::stdout().write_all(js.as_bytes())?;
+
+    Ok(())
 }
